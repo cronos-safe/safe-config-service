@@ -8,7 +8,6 @@ from rest_framework import permissions
 from config import settings
 
 schema_view = get_schema_view(
-    url='https://config-cronos-safe.3ona.co/',
     validators=["flex", "ssv"],
     public=True,
     permission_classes=(permissions.AllowAny,),
