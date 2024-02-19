@@ -21,12 +21,35 @@ class GasPriceFixedSerializer(serializers.Serializer[GasPrice]):
     wei_value = serializers.CharField(source="fixed_wei_value")
 
 
+class GasPriceFixed1559Serializer(serializers.Serializer[GasPrice]):
+    type = serializers.ReadOnlyField(default="fixed1559")
+    max_fee_per_gas = serializers.CharField()
+    max_priority_fee_per_gas = serializers.CharField()
+
+
 class GasPriceSerializer(serializers.Serializer[GasPrice]):
     def to_representation(self, instance: GasPrice) -> ReturnDict:
-        if instance.oracle_uri and instance.fixed_wei_value is None:
+        if (
+            instance.oracle_uri
+            and instance.fixed_wei_value is None
+            and instance.max_fee_per_gas is None
+            and instance.max_priority_fee_per_gas is None
+        ):
             return GasPriceOracleSerializer(instance).data
-        elif instance.fixed_wei_value and instance.oracle_uri is None:
+        elif (
+            instance.fixed_wei_value
+            and instance.oracle_uri is None
+            and instance.max_fee_per_gas is None
+            and instance.max_priority_fee_per_gas is None
+        ):
             return GasPriceFixedSerializer(instance).data
+        elif (
+            instance.max_fee_per_gas
+            and instance.max_priority_fee_per_gas
+            and instance.oracle_uri is None
+            and instance.fixed_wei_value is None
+        ):
+            return GasPriceFixed1559Serializer(instance).data
         else:
             raise APIException(
                 f"The gas price oracle or a fixed gas price was not provided for chain {instance.chain}"
@@ -107,6 +130,7 @@ class ChainSerializer(serializers.ModelSerializer[Chain]):
     chain_id = serializers.CharField(source="id")
     chain_name = serializers.CharField(source="name")
     short_name = serializers.CharField()
+    chain_logo_uri = serializers.ImageField(use_url=True)
     rpc_uri = serializers.SerializerMethodField()
     safe_apps_rpc_uri = serializers.SerializerMethodField()
     public_rpc_uri = serializers.SerializerMethodField()
@@ -129,7 +153,9 @@ class ChainSerializer(serializers.ModelSerializer[Chain]):
             "chain_name",
             "short_name",
             "description",
+            "chain_logo_uri",
             "l2",
+            "is_testnet",
             "rpc_uri",
             "safe_apps_rpc_uri",
             "public_rpc_uri",
