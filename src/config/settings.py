@@ -36,6 +36,9 @@ ALLOWED_HOSTS = [allowed_host.strip() for allowed_host in allowed_hosts.split(",
 
 # Application definition
 
+APPLICATION_VERSION = os.getenv("APPLICATION_VERSION")
+APPLICATION_BUILD_NUMBER = os.getenv("APPLICATION_BUILD_NUMBER")
+
 REST_FRAMEWORK = {
     # https://www.django-rest-framework.org/api-guide/renderers/
     "DEFAULT_RENDERER_CLASSES": [
@@ -52,6 +55,7 @@ INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
+    "django.contrib.postgres",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
@@ -220,9 +224,20 @@ AWS_S3_FILE_OVERWRITE = True
 # Setting AWS_QUERYSTRING_AUTH to False to remove query parameter authentication from generated URLs.
 # This can be useful if your S3 buckets are public.
 AWS_QUERYSTRING_AUTH = False
-DEFAULT_FILE_STORAGE = os.getenv(
-    "DEFAULT_FILE_STORAGE", "django.core.files.storage.FileSystemStorage"
-)
+# In Django 4.2, STORAGES replaced DEFAULT_FILE_STORAGE. It was later removed removed in Django 5.1.
+# https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#configuration-settings
+# https://docs.djangoproject.com/en/5.1/releases/5.1/
+STORAGES = {
+    "default": {
+        "BACKEND": os.getenv(
+            "DEFAULT_FILE_STORAGE", "django.core.files.storage.FileSystemStorage"
+        ),
+    },
+    "staticfiles": {
+        # Following is default but must explicitly set if "default" is
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+    },
+}
 
 # SECURITY
 # https://docs.djangoproject.com/en/4.0/ref/settings/#csrf-trusted-origins
@@ -232,3 +247,7 @@ if allowed_csrf_origins:
         allowed_csrf_origins.strip()
         for allowed_csrf_origins in allowed_csrf_origins.split(",")
     ]
+
+use_proxy_ssl_header = os.environ.get("USE_PROXY_SSL_HEADER", "false").lower() == "true"
+if use_proxy_ssl_header:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
